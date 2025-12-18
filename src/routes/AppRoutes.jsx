@@ -5,6 +5,7 @@ import HomePage from "../pages/HomePage.jsx";
 import AboutMePage from "../pages/AboutMePage.jsx";
 import ContactPage from "../pages/ContactPage.jsx";
 import ServicePage from "../pages/ServicePage.jsx";
+import BlogPage from "../pages/BlogPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -14,6 +15,7 @@ const AppRoutes = () => {
         <Route path="/about" Component={AboutMePage} />
         <Route path="/contact" Component={ContactPage} />
         <Route path="/service" Component={ServicePage} />
+        <Route path="/blogs" Component={BlogPage} />
       </Route>
 
       <Route path="/" Component={DashboardLayout}>

@@ -40,6 +40,18 @@ const Navbar = () => {
       </li>
       <li className="mx-1">
         <NavLink
+          to="/blogs"
+          className={({ isActive }) =>
+            isActive
+              ? "font-semibold text-primary bg-primary/10 rounded-lg px-4 py-2 transition-all duration-200"
+              : "font-medium text-base-content/70 hover:text-primary hover:bg-base-200 rounded-lg px-4 py-2 transition-all duration-200"
+          }
+        >
+          Blogs
+        </NavLink>
+      </li>
+      <li className="mx-1">
+        <NavLink
           to="/service"
           className={({ isActive }) =>
             isActive
