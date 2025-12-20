@@ -2,3 +2,13 @@
 @plugin "daisyui" {
   themes: abyss --default;
 }
+
+body {
+  background-color: #0d1321;
+  min-height: 100vh;
+}
+
+#root {
+  background-color: #0d1321;
+  min-height: 100vh;
+}

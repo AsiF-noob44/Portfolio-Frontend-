@@ -1,10 +1,17 @@
 import { NavLink } from "react-router-dom";
+
 const Navbar = () => {
+  const closeDropdown = () => {
+    // Remove focus from the dropdown trigger to close it
+    document.activeElement?.blur();
+  };
+
   const navLinks = (
     <>
       <li className="mx-1">
         <NavLink
           to="/"
+          onClick={closeDropdown}
           className={({ isActive }) =>
             isActive
               ? "font-semibold text-primary bg-primary/10 rounded-lg px-4 py-2 transition-all duration-200"
@@ -17,6 +24,7 @@ const Navbar = () => {
       <li className="mx-1">
         <NavLink
           to="/about"
+          onClick={closeDropdown}
           className={({ isActive }) =>
             isActive
               ? "font-semibold text-primary bg-primary/10 rounded-lg px-4 py-2 transition-all duration-200"
@@ -29,6 +37,7 @@ const Navbar = () => {
       <li className="mx-1">
         <NavLink
           to="/contact"
+          onClick={closeDropdown}
           className={({ isActive }) =>
             isActive
               ? "font-semibold text-primary bg-primary/10 rounded-lg px-4 py-2 transition-all duration-200"
@@ -41,6 +50,7 @@ const Navbar = () => {
       <li className="mx-1">
         <NavLink
           to="/blogs"
+          onClick={closeDropdown}
           className={({ isActive }) =>
             isActive
               ? "font-semibold text-primary bg-primary/10 rounded-lg px-4 py-2 transition-all duration-200"
@@ -53,6 +63,7 @@ const Navbar = () => {
       <li className="mx-1">
         <NavLink
           to="/service"
+          onClick={closeDropdown}
           className={({ isActive }) =>
             isActive
               ? "font-semibold text-primary bg-primary/10 rounded-lg px-4 py-2 transition-all duration-200"
@@ -66,7 +77,7 @@ const Navbar = () => {
   );
 
   return (
-    <div className="navbar bg-base-100 shadow-sm mt-4 p-5 rounded-lg">
+    <div className="navbar bg-base-100 shadow-sm mt-4 py-4 px-5 rounded-lg">
       <div className="navbar-start">
         <div className="dropdown">
           <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
@@ -87,13 +98,26 @@ const Navbar = () => {
             </svg>
           </div>
           <ul
-            tabIndex="-1"
+            tabIndex={0}
             className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
           >
             {navLinks}
           </ul>
         </div>
-        <a className="btn btn-ghost text-xl">Saeed Asif</a>
+        <NavLink to="/" className="flex items-center lg:hidden">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-10 w-auto object-contain scale-125 origin-left"
+          />
+        </NavLink>
+        <NavLink to="/" className="hidden lg:flex items-center">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-12 w-auto object-contain scale-175 origin-left"
+          />
+        </NavLink>
       </div>
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1">{navLinks}</ul>
