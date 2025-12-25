@@ -1,16 +1,25 @@
-import { useEffect, useState } from "react";
-import { Eye, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { Eye, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 import useBlogStore from "./../lib/store/useBlogStore";
 
 const BlogPage = () => {
-  const { blogs, loading, error, fetchBlogs, pagination } = useBlogStore();
+  const { blogs, loading, error, fetchBlogs, deleteBlogById, pagination } =
+    useBlogStore();
 
   // Filter and sorting states
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Check if user is admin (you can modify this logic based on your auth implementation)
+  const [isAdmin] = useState(() => {
+    const token = localStorage.getItem("user-token");
+    return !!token; // For now, just check if token exists
+  });
 
   // Debounce search term
   useEffect(() => {
@@ -24,28 +33,129 @@ const BlogPage = () => {
 
   // Single effect to fetch blogs when any filter changes
   useEffect(() => {
-    const params = {
-      page: currentPage,
-      limit: 9,
+    const loadBlogs = async () => {
+      try {
+        const params = {
+          page: currentPage,
+          limit: 9,
+        };
+
+        if (debouncedSearch) params.search = debouncedSearch;
+        if (sortBy) params.sortBy = sortBy;
+
+        await fetchBlogs(params);
+      } catch (error) {
+        // Error is already stored in the store state
+        console.error("Failed to fetch blogs:", error);
+      }
     };
 
-    if (debouncedSearch) params.search = debouncedSearch;
-    if (sortBy) params.sortBy = sortBy;
+    loadBlogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, debouncedSearch, sortBy]);
 
-    fetchBlogs(params);
-  }, [currentPage, debouncedSearch, sortBy, fetchBlogs]);
-
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, []);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setSearchTerm("");
     setSortBy("");
     setCurrentPage(1);
     toast.success("Filters cleared");
-  };
+  }, []);
+
+  const handleDelete = useCallback(
+    async (id, title) => {
+      const result = await Swal.fire({
+        title: "Delete Blog?",
+        html: `Are you sure you want to delete<br/><strong>"${title}"</strong>?<br/><br/>This action cannot be undone.`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "Cancel",
+        focusCancel: true,
+      });
+
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      // Show loading state
+      Swal.fire({
+        title: "Deleting...",
+        text: "Please wait while we delete the blog.",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      try {
+        await deleteBlogById(id);
+
+        // Close loading modal first
+        Swal.close();
+
+        // Success message
+        await Swal.fire({
+          title: "Deleted!",
+          text: "Blog has been deleted successfully.",
+          icon: "success",
+          confirmButtonColor: "#10b981",
+          timer: 2000,
+        });
+
+        // Refresh the blog list to update pagination (only on success)
+        try {
+          const params = {
+            page: currentPage,
+            limit: 9,
+          };
+          if (debouncedSearch) params.search = debouncedSearch;
+          if (sortBy) params.sortBy = sortBy;
+          await fetchBlogs(params);
+        } catch (refreshError) {
+          // If refresh fails, just log it but don't show error
+          console.error("Failed to refresh blogs:", refreshError);
+        }
+      } catch (error) {
+        console.error("Delete error:", error);
+
+        // Close loading modal
+        Swal.close();
+
+        let errorMessage = "Failed to delete blog";
+
+        if (error.response?.status === 401) {
+          errorMessage = "Unauthorized - Please login first!";
+        } else if (error.response?.status === 400) {
+          errorMessage = error.response.data.message || "Invalid blog ID";
+        } else if (error.response?.status === 404) {
+          errorMessage = "Blog not found";
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.code === "ERR_NETWORK") {
+          errorMessage = "Network Error - Cannot connect to backend";
+        }
+
+        // Error message
+        Swal.fire({
+          title: "Error!",
+          text: errorMessage,
+          icon: "error",
+          confirmButtonColor: "#ef4444",
+        });
+
+        // Don't refresh blogs on error - they're still valid
+      }
+    },
+    [currentPage, debouncedSearch, sortBy, deleteBlogById, fetchBlogs]
+  );
 
   if (loading && !blogs) {
     return (
@@ -151,86 +261,22 @@ const BlogPage = () => {
 
         {/* Blog Grid */}
         {blogs && blogs.length > 0 ? (
-          <div className="relative">
-            {/* Loading Overlay */}
+          <div className="relative min-h-[600px]">
+            {/* Loading Overlay - Only show when loading and blogs exist */}
             {loading && (
-              <div className="absolute inset-0 bg-base-200/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
-                <div className="flex flex-col items-center gap-3">
-                  <span className="loading loading-spinner loading-lg text-primary"></span>
-                  <span className="text-lg font-semibold">
-                    Loading blogs...
-                  </span>
-                </div>
+              <div className="absolute inset-0 bg-base-200/30 z-10 flex items-center justify-center rounded-lg">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {blogs.map((blog) => (
-                <div
+                <BlogCard
                   key={blog._id}
-                  className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-                >
-                  {/* Blog Image */}
-                  <figure className="relative h-48 overflow-hidden">
-                    <img
-                      src={blog.img || "/placeholder-blog.jpg"}
-                      alt={blog.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src =
-                          "https://via.placeholder.com/400x300?text=Blog+Image";
-                      }}
-                    />
-                    {/* Category Badge */}
-                    {blog.category && (
-                      <div className="absolute top-3 left-3">
-                        <span className="badge badge-soft badge-primary badge-sm">
-                          {blog.category}
-                        </span>
-                      </div>
-                    )}
-                  </figure>
-
-                  <div className="card-body">
-                    {/* Blog Title */}
-                    <h2 className="card-title line-clamp-2 h-14">
-                      {blog.title}
-                    </h2>
-
-                    {/* Short Description */}
-                    {blog.short_description && (
-                      <p className="text-sm text-base-content/70 line-clamp-2">
-                        {blog.short_description}
-                      </p>
-                    )}
-
-                    {/* Blog Stats */}
-                    <div className="flex items-center gap-4 text-sm text-base-content/60 mt-2">
-                      <div className="flex items-center gap-1">
-                        <Eye className="w-4 h-4" />
-                        <span>{blog.views || 0} views</span>
-                      </div>
-                      {blog.createdAt && (
-                        <span>
-                          {new Date(blog.createdAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            }
-                          )}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* View Details Button */}
-                    <div className="card-actions justify-end mt-4">
-                      <button className="btn btn-info btn-sm font-semibold">
-                        View Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  blog={blog}
+                  isAdmin={isAdmin}
+                  onDelete={handleDelete}
+                  loading={loading}
+                />
               ))}
             </div>
           </div>
@@ -310,6 +356,86 @@ const BlogPage = () => {
             </button>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+// Memoized BlogCard component to prevent unnecessary re-renders
+const BlogCard = ({ blog, isAdmin, onDelete, loading }) => {
+  const handleImageError = useCallback((e) => {
+    e.target.src = "https://via.placeholder.com/400x300?text=Blog+Image";
+  }, []);
+
+  const formattedDate = useMemo(() => {
+    if (!blog.createdAt) return null;
+    return new Date(blog.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [blog.createdAt]);
+
+  return (
+    <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 will-change-transform">
+      {/* Blog Image */}
+      <figure className="relative h-48 overflow-hidden">
+        <img
+          src={blog.img || "/placeholder-blog.jpg"}
+          alt={blog.title}
+          className="w-full h-full object-cover"
+          onError={handleImageError}
+          loading="lazy"
+        />
+        {/* Category Badge */}
+        {blog.category && (
+          <div className="absolute top-3 left-3">
+            <span className="badge badge-soft badge-primary badge-sm">
+              {blog.category}
+            </span>
+          </div>
+        )}
+      </figure>
+
+      <div className="card-body">
+        {/* Blog Title */}
+        <h2 className="card-title line-clamp-2 h-14">{blog.title}</h2>
+
+        {/* Short Description */}
+        {blog.short_description && (
+          <p className="text-sm text-base-content/70 line-clamp-2">
+            {blog.short_description}
+          </p>
+        )}
+
+        {/* Blog Stats */}
+        <div className="flex items-center gap-4 text-sm text-base-content/60 mt-2">
+          <div className="flex items-center gap-1">
+            <Eye className="w-4 h-4" />
+            <span>{blog.views || 0} views</span>
+          </div>
+          {formattedDate && <span>{formattedDate}</span>}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="card-actions justify-end mt-4">
+          <Link
+            to={`/blogs/${blog._id}`}
+            className="btn btn-info btn-sm font-semibold"
+          >
+            View Details
+          </Link>
+          {isAdmin && (
+            <button
+              className="btn btn-error btn-sm font-semibold"
+              onClick={() => onDelete(blog._id, blog.title)}
+              disabled={loading}
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

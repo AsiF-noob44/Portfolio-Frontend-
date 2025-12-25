@@ -6,6 +6,7 @@ import AboutMePage from "../pages/AboutMePage.jsx";
 import ContactPage from "../pages/ContactPage.jsx";
 import ServicePage from "../pages/ServicePage.jsx";
 import BlogPage from "../pages/BlogPage.jsx";
+import BlogDetailsPage from "../pages/BlogDetailsPage.jsx";
 
 const AppRoutes = () => {
   return (
@@ -16,6 +17,7 @@ const AppRoutes = () => {
         <Route path="/contact" Component={ContactPage} />
         <Route path="/service" Component={ServicePage} />
         <Route path="/blogs" Component={BlogPage} />
+        <Route path="/blogs/:id" Component={BlogDetailsPage} />
       </Route>
 
       <Route path="/" Component={DashboardLayout}>

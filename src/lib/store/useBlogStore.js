@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { getAllBlogs } from "../api/blogAPI.js";
+import {
+  deleteBlogByIdAPI,
+  getAllBlogsAPI,
+  getBlogByIdAPI,
+} from "../api/blogAPI.js";
 
 const useBlogStore = create((set) => ({
   blogs: null,
@@ -16,7 +20,7 @@ const useBlogStore = create((set) => ({
   fetchBlogs: async (params) => {
     try {
       set({ loading: true, error: null });
-      const response = await getAllBlogs(params);
+      const response = await getAllBlogsAPI(params);
       set({
         blogs: response.data.blogs,
         pagination: {
@@ -29,8 +33,37 @@ const useBlogStore = create((set) => ({
         },
         loading: false,
       });
+      return response;
     } catch (error) {
       set({ error, loading: false });
+      throw error;
+    }
+  },
+
+  fetchSingleBlog: async (id) => {
+    try {
+      set({ loading: true, error: null });
+      const response = await getBlogByIdAPI(id);
+      set({ blogs: [response.data], loading: false });
+      return response;
+    } catch (error) {
+      set({ error, loading: false });
+      throw error;
+    }
+  },
+
+  deleteBlogById: async (id) => {
+    try {
+      set({ loading: true, error: null });
+      const response = await deleteBlogByIdAPI(id);
+      set((state) => ({
+        blogs: state.blogs.filter((blog) => blog._id !== id),
+        loading: false,
+      }));
+      return response;
+    } catch (error) {
+      set({ error, loading: false });
+      throw error;
     }
   },
 }));

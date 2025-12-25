@@ -12,7 +12,7 @@ import axiosInstance from "../axiosInstance.js";
  * @param {string} params.endDate - Filter to date
  * @returns {Promise} Response with blogs and pagination data
  */
-export const getAllBlogs = async (params = {}) => {
+export const getAllBlogsAPI = async (params = {}) => {
   const queryParams = new URLSearchParams();
 
   // Add parameters only if they exist
@@ -35,6 +35,10 @@ export const getAllBlogs = async (params = {}) => {
  * @param {string} id - Blog ID
  * @returns {Promise} Response with blog data
  */
-export const getBlogById = async (id) => {
+export const getBlogByIdAPI = async (id) => {
   return axiosInstance.get(`/blogs/${id}`);
+};
+
+export const deleteBlogByIdAPI = async (id) => {
+  return axiosInstance.delete(`/blogs/${id}`);
 };
